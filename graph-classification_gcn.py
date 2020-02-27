@@ -29,16 +29,13 @@ flags.DEFINE_float('dropout', 0.5, 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('weight_decay', 5e-4, 'Weight for L2 loss on embedding matrix.')
 flags.DEFINE_integer('early_stopping', 10, 'Tolerance for early stopping (# of epochs).')
 
-
-
-if FLAGS.dataset=='PROTEINS':
-    num_nodes = 43471
-    num_graphs = 1113
-    tot = 44584
-    num_classes = 2
-    num_feats = 29
-    splits = [[0,1000], [1000, 1000], [1000, 1100]]
-    dataset_name = "proteins"
+num_nodes = 13631
+num_graphs = 90
+tot = 90
+num_classes = 506
+num_feats = 10
+splits = [[0,60], [0, 80], [80, 90]]
+dataset_name = "graphequations"
 
 if not FLAGS.with_pooling: #global nodes approach
 

@@ -5,6 +5,8 @@ from itertools import groupby
 import scipy.sparse as sp
 import random
 import sys
+import pickle
+
 
 def parse_index_file(filename):
     index = []
@@ -25,6 +27,7 @@ def sample_mask(idx, l):
     mask[idx] = 1
     return np.array(mask, dtype=np.bool)
 
+
 def load_data_outer(dataset, model):
     if model == 'gcn':
         return load_data_gcn(dataset)
@@ -37,7 +40,6 @@ def add_one_by_one(l):
         cumsum += elt
         new_l.append(cumsum)
     return new_l
-
 
 
 def load_data_gcn(dataset="cora"):
@@ -58,10 +60,11 @@ def load_data_gcn(dataset="cora"):
 
     # simmetrizzazione della matrice d'adiacenza
     adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)
-    
+
     print('{} has {} nodes, {} edges, {} features.'.format(dataset, adj.shape[0], edges.shape[0], features.shape[1]))
 
     return features, adj, labels
+
 
 def get_splits(labels, train_dim, val_dim, test_dim):
     train_ind = range(train_dim[1])
@@ -82,16 +85,16 @@ def get_splits(labels, train_dim, val_dim, test_dim):
 
     return labels_train, labels_val, labels_test, train_ind, val_ind, test_ind, train_mask, val_mask, test_mask
 
-def get_splits_graphs_basic(num_graphs, labels, train_dim, val_dim, test_dim, oldidx):
 
+def get_splits_graphs_basic(num_graphs, labels, train_dim, val_dim, test_dim, oldidx):
     idx = np.array([i for i in range(num_graphs)])
-    #idx = np.concatenate( (np.array([range(0,98)]), np.array([range(100,198)]), np.array([range(200,298)]), np.array([range(300,398)]), np.array([range(400,498)]), np.array([range(500,598)])), axis=None ) 
-    #idx = np.concatenate( (idx, np.array(range(98,100)), np.array(range(198,200)), np.array(range(298,300)), np.array(range(398,400)), np.array(range(498,500)), np.array(range(598,600))), axis=None )
+    # idx = np.concatenate( (np.array([range(0,98)]), np.array([range(100,198)]), np.array([range(200,298)]), np.array([range(300,398)]), np.array([range(400,498)]), np.array([range(500,598)])), axis=None )
+    # idx = np.concatenate( (idx, np.array(range(98,100)), np.array(range(198,200)), np.array(range(298,300)), np.array(range(398,400)), np.array(range(498,500)), np.array(range(598,600))), axis=None )
     random.shuffle(idx)
-    
-    train_ind = [idx[train_dim[0] : train_dim[1]]]
-    val_ind = [idx[val_dim[0] : val_dim[1]]]
-    test_ind = [idx[test_dim[0] : test_dim[1]]]
+
+    train_ind = [idx[train_dim[0]: train_dim[1]]]
+    val_ind = [idx[val_dim[0]: val_dim[1]]]
+    test_ind = [idx[test_dim[0]: test_dim[1]]]
 
     labels_train = np.zeros(labels.shape, dtype=np.int32)
     labels_val = np.zeros(labels.shape, dtype=np.int32)
@@ -109,14 +112,18 @@ def get_splits_graphs_basic(num_graphs, labels, train_dim, val_dim, test_dim, ol
 
 
 def get_splits_graphs(num_graphs, labels, train_dim, val_dim, test_dim, idx):
+    print("Num graphs: " + str(num_graphs))
+    print("Labels " + str(labels.shape))
+    print("train_dim: " + str(train_dim))
+    print("val dim: " + str(val_dim))
 
     idx_incr = np.array([i for i in range(num_graphs)])
     idx_incr = idx + idx_incr
-    random.shuffle(idx_incr) #fondamentale
+    random.shuffle(idx_incr)  # fondamentale
 
-    train_ind = [idx_incr[train_dim[0] : train_dim[1]]]
-    val_ind = [idx_incr[val_dim[0] : val_dim[1]]]
-    test_ind = [idx_incr[test_dim[0] : test_dim[1]]]
+    train_ind = [idx_incr[train_dim[0]: train_dim[1]]]
+    val_ind = [idx_incr[val_dim[0]: val_dim[1]]]
+    test_ind = [idx_incr[test_dim[0]: test_dim[1]]]
 
     labels_train = np.zeros(labels.shape, dtype=np.int32)
     labels_val = np.zeros(labels.shape, dtype=np.int32)
@@ -132,127 +139,165 @@ def get_splits_graphs(num_graphs, labels, train_dim, val_dim, test_dim, idx):
 
     return labels_train, labels_val, labels_test, train_ind, val_ind, test_ind, train_mask, val_mask, test_mask
 
+
 def load_data_basic(num_nodes, num_graphs, num_classes, dim_feats, dataset_name):
     global_nodes_idx = find_insert_position(dataset_name)
-    adj_matrix = build_adj_diag_basic(num_nodes, num_graphs, dataset_name)
-    node_feats = build_feats_basic(num_nodes, num_graphs, dim_feats, dataset_name)
-    graph_labels = build_labels_basic(num_graphs, num_classes, num_nodes, dataset_name)
+    print ('Found insert pos')
+    # adj_matrix = build_adj_diag_basic(num_nodes, num_graphs, dataset_name)
+    # node_feats = build_feats_basic(num_nodes, num_graphs, dim_feats, dataset_name)
+    # graph_labels = build_labels_basic(num_graphs, num_classes, num_nodes, dataset_name)
+    adj_matrix = pickle.load(open('/Users/cksash/data/fyp/kdd/joined_adjmatrix.pkl', 'rb'))
+    node_feats = pickle.load(open('/Users/cksash/data/fyp/kdd/node_vectors_joined.pkl', 'rb'))
+    graph_labels = pickle.load(open('/Users/cksash/Documents/FYP-holidays/fyp-main/data/labels_words_first1000.pkl', 'rb'))
+
     return adj_matrix, node_feats, graph_labels, global_nodes_idx
+
 
 def load_data(num_nodes, num_graphs, num_classes, dim_feats, dataset_name):
+    global_nodes_idx = find_insert_position()
+    #
+    # adj_matrix = build_adj_diag(num_nodes, num_graphs, global_nodes_idx, dataset_name)
+    #
+    # node_feats = build_feats_vertConc(global_nodes_idx, num_nodes, num_graphs, dim_feats, dataset_name)
+    #
+    # graph_labels = build_labels_vertConc(num_graphs, num_classes, num_nodes, global_nodes_idx,
+    #                                      dataset_name)  # codifica one-hot
+    #
+    # return adj_matrix, node_feats, graph_labels, global_nodes_idx
+    adj_matrix = pickle.load(open('/Users/cksash/data/fyp/kdd/joined_adjmatrix.pkl', 'rb'))
+    node_feats = pickle.load(open('/Users/cksash/data/fyp/kdd/node_vectors_joined.pkl', 'rb'))
+    graph_labels = pickle.load(open('/Users/cksash/Documents/FYP-holidays/fyp-main/data/labels_words_first1000.pkl', 'rb'))
 
-    global_nodes_idx = find_insert_position(dataset_name)
-
-    adj_matrix = build_adj_diag(num_nodes, num_graphs, global_nodes_idx, dataset_name)
-
-    node_feats = build_feats_vertConc(global_nodes_idx, num_nodes, num_graphs, dim_feats, dataset_name)
-
-    graph_labels = build_labels_vertConc(num_graphs, num_classes, num_nodes, global_nodes_idx, dataset_name) #codifica one-hot
-    
     return adj_matrix, node_feats, graph_labels, global_nodes_idx
 
 
-def find_insert_position(dataset_name):
-    path = dataset_name +"/"+dataset_name.upper()+"_graph_indicator.txt"
+def find_insert_position():
+    path = "equations_graph_indicator.txt"
+
+    graph_numbers = pickle.load(open('/Users/cksash/data/fyp/kdd/graph_number.pkl', 'rb'))
+
+    file = open(path, 'w')
+    for i in graph_numbers:
+        file.write(str(i) + '\n')
+    file.close()
+
     node_ind = np.genfromtxt(path)
     fake_idx = np.where(node_ind[:-1] != node_ind[1:])[0]
     fake_idx = fake_idx + 1
     fake_idx = np.insert(fake_idx, 0, 0)
     return fake_idx
 
-def build_labels_basic(graphs, num_classes, num_nodes, dataset_name ):
-    if(os.path.exists(dataset_name +"_labels_basic.npy")):
-            labels = np.load(dataset_name +"_labels_basic.npy")
-            return labels
 
-    path=dataset_name +"/"+dataset_name.upper()+"_graph_labels.txt"
-    true_labels = np.loadtxt(path, dtype='i', delimiter=',') #prova
-    labels = encode_onehot(true_labels)
-    np.save(dataset_name +"_labels_basic.npy", labels)
-    return labels
+def find_insert_position_old(dataset_name):
+    path = dataset_name + "/" + dataset_name.upper() + "_graph_indicator.txt"
+    node_ind = np.genfromtxt(path)
+    fake_idx = np.where(node_ind[:-1] != node_ind[1:])[0]
+    fake_idx = fake_idx + 1
+    fake_idx = np.insert(fake_idx, 0, 0)
 
-def build_labels_vertConc(graphs, num_classes, num_nodes, idx, dataset_name ):
-    
-    if(os.path.exists(dataset_name +"_labels_aug.npy")):
-        labels = np.load(dataset_name +"_labels_aug.npy")
+    print (fake_idx)
+    return fake_idx
+
+
+def build_labels_basic(graphs, num_classes, num_nodes, dataset_name):
+    if (os.path.exists(dataset_name + "_labels_basic.npy")):
+        labels = np.load(dataset_name + "_labels_basic.npy")
         return labels
 
-    path=dataset_name +"/"+dataset_name.upper()+"_graph_labels.txt"
+    path = dataset_name + "/" + dataset_name.upper() + "_graph_labels.txt"
+    true_labels = np.loadtxt(path, dtype='i', delimiter=',')  # prova
+    labels = encode_onehot(true_labels)
+    np.save(dataset_name + "_labels_basic.npy", labels)
+    return labels
 
-    true_labels = np.loadtxt(path, dtype='i', delimiter=',') #prova
+
+def build_labels_vertConc(graphs, num_classes, num_nodes, idx, dataset_name):
+    if (os.path.exists(dataset_name + "_labels_aug.npy")):
+        labels = np.load(dataset_name + "_labels_aug.npy")
+        return labels
+
+    path = dataset_name + "/" + dataset_name.upper() + "_graph_labels.txt"
+
+    true_labels = np.loadtxt(path, dtype='i', delimiter=',')  # prova
     true_labels = encode_onehot(true_labels)
     labels = np.array([[0 for i in range(num_classes)] for k in range(num_nodes)])
 
-    #inserisco le label vere su cui calcolare loss e verificare i risultati
+    # inserisco le label vere su cui calcolare loss e verificare i risultati
     for i in range(graphs):
-        labels = np.insert(labels, idx[i]+i, true_labels[i], axis=0)
+        labels = np.insert(labels, idx[i] + i, true_labels[i], axis=0)
         print("row: ")
         print(i)
 
-    np.save(dataset_name +"_labels_aug.npy", labels)
+    np.save(dataset_name + "_labels_aug.npy", labels)
     return labels
 
+
 def build_feats_basic(num_nodes, graphs, dim_feats, dataset_name):
-    if(os.path.exists(dataset_name+"_feats_matrix_basic.npz")):
-        feats_matrix = sp.load_npz(dataset_name+"_feats_matrix_basic.npz")
+    if (os.path.exists(dataset_name + "_feats_matrix_basic.npz")):
+        feats_matrix = sp.load_npz(dataset_name + "_feats_matrix_basic.npz")
         return feats_matrix
 
-    path=dataset_name +"/"+dataset_name.upper()+"_node_attributes.txt" 
+    path = dataset_name + "/" + dataset_name.upper() + "_node_attributes.txt"
 
     feats_matrix = np.loadtxt(path, delimiter=',')
     feats_matrix = sp.csr_matrix(feats_matrix)
-    sp.save_npz(dataset_name+"_feats_matrix_basic", feats_matrix)
+    sp.save_npz(dataset_name + "_feats_matrix_basic", feats_matrix)
     return feats_matrix
 
+
 def build_feats_vertConc(idx, num_nodes, graphs, dim_feats, dataset_name):
-    if(os.path.exists(dataset_name+"_feats_matrix_aug.npz")):
-        feats_matrix = sp.load_npz(dataset_name+"_feats_matrix_aug.npz")
+    if (os.path.exists(dataset_name + "_feats_matrix_aug.npz")):
+        feats_matrix = sp.load_npz(dataset_name + "_feats_matrix_aug.npz")
         return feats_matrix
 
-    path=dataset_name +"/"+dataset_name.upper()+"_node_attributes.txt" 
+    path = dataset_name + "/" + dataset_name.upper() + "_node_attributes.txt"
 
     feats_matrix = np.loadtxt(path, delimiter=',')
     fake_feats = np.array([[0. for i in range(dim_feats)] for k in range(graphs)])
-    #inserimento righe aggiuntive
+    # inserimento righe aggiuntive
     print("inserting global node rows:")
     for i in range(graphs):
-        feats_matrix = np.insert(feats_matrix, idx[i]+i, fake_feats[i], axis=0)
+        feats_matrix = np.insert(feats_matrix, idx[i] + i, fake_feats[i], axis=0)
         print("row: ")
         print(i)
 
     feats_matrix = np.absolute(feats_matrix)
     feats_matrix = sp.csr_matrix(feats_matrix)
-    sp.save_npz(dataset_name+"_feats_matrix_aug", feats_matrix)
+    sp.save_npz(dataset_name + "_feats_matrix_aug", feats_matrix)
     return feats_matrix
 
-def build_feats_vertConc_mean_features(idx,num_nodes, graphs, dim_feats, dataset_name):
-    if(os.path.exists(dataset_name+"_feats_matrix_aug_with_mean.npz")):
-        feats_matrix = sp.load_npz(dataset_name+"_feats_matrix_aug_with_mean.npz")
+
+def build_feats_vertConc_mean_features(idx, num_nodes, graphs, dim_feats, dataset_name):
+    if (os.path.exists(dataset_name + "_feats_matrix_aug_with_mean.npz")):
+        feats_matrix = sp.load_npz(dataset_name + "_feats_matrix_aug_with_mean.npz")
         return feats_matrix
 
-    path=dataset_name +"/"+dataset_name.upper()+"_node_attributes.txt" 
-    aug_idx = np.append(idx, int(num_nodes-1))
+    path = dataset_name + "/" + dataset_name.upper() + "_node_attributes.txt"
+    aug_idx = np.append(idx, int(num_nodes - 1))
 
     feats_matrix = np.loadtxt(path, delimiter=',')
-    #inizializzo le features di ogni nodo globale come la media delle features dei nodi del relativo grafo
-    fake_feats = np.array([[ np.mean(feats_matrix[[ range(aug_idx[k],aug_idx[k+1]) ] ,[i] ] ) for i in range(dim_feats)] for k in range(graphs)])
-    #inserimento righe aggiuntive
+    # inizializzo le features di ogni nodo globale come la media delle features dei nodi del relativo grafo
+    fake_feats = np.array(
+        [[np.mean(feats_matrix[[range(aug_idx[k], aug_idx[k + 1])], [i]]) for i in range(dim_feats)] for k in
+         range(graphs)])
+    # inserimento righe aggiuntive
     print("inserting global node rows:")
     for i in range(graphs):
-        feats_matrix = np.insert(feats_matrix, idx[i]+i, fake_feats[i], axis=0)
+        feats_matrix = np.insert(feats_matrix, idx[i] + i, fake_feats[i], axis=0)
         print("row: ")
         print(i)
 
     feats_matrix = sp.csr_matrix(feats_matrix)
-    sp.save_npz(dataset_name+"_feats_matrix_aug_with_mean", feats_matrix)
+    sp.save_npz(dataset_name + "_feats_matrix_aug_with_mean", feats_matrix)
     return feats_matrix
 
+
 def build_adj_diag_basic(nodes, graphs, dataset_name):
-    if(os.path.exists(dataset_name +"_adj_matrix_basic.npz")):
-        adj_matrix = sp.load_npz(dataset_name+"_adj_matrix_basic.npz")
+    if (os.path.exists(dataset_name + "_adj_matrix_basic.npz")):
+        adj_matrix = sp.load_npz(dataset_name + "_adj_matrix_basic.npz")
         return adj_matrix
-    
-    path=dataset_name +"/"+dataset_name.upper()+"_A.txt"
+
+    path = dataset_name + "/" + dataset_name.upper() + "_A.txt"
     tmpdata = np.genfromtxt(path, dtype=np.dtype(str))
     ind1 = tmpdata[:, 1]
     ind2 = tmpdata[:, 0]
@@ -261,41 +306,41 @@ def build_adj_diag_basic(nodes, graphs, dataset_name):
         print(i)
         u = ind1[i]
         v = ind2[i]
-        u = int(u)      #vanno letti come stringhe
-        v = int(v[:-1]) #aggiustamenti per eliminare la virgola del file 
-        adj_matrix[u-1][v-1] = 1 
+        u = int(u)  # vanno letti come stringhe
+        v = int(v[:-1])  # aggiustamenti per eliminare la virgola del file
+        adj_matrix[u - 1][v - 1] = 1
 
     adj_matrix = np.matrix(adj_matrix)
     adj_matrix = sp.coo_matrix(adj_matrix)
     sp.save_npz(dataset_name + "_adj_matrix_basic", adj_matrix)
     return adj_matrix
 
-#dal file ENZYMES_A costruisce una matrice diagonale a blocchi contenente le matrici di adiacenza di ogni grafo (un grafo per blocco)
-def build_adj_diag(nodes, graphs, idx, dataset_name):
-    
-    if(os.path.exists(dataset_name +"_adj_matrix_aug.npz")):
-        adj_matrix = sp.load_npz(dataset_name+"_adj_matrix_aug.npz")
-        return adj_matrix
-    
-    path=dataset_name +"/"+dataset_name.upper()+"_A.txt"
 
-    #vanno preparati 600 nodi globali, uno per grafo
-    nodes_tot = nodes+graphs
+# dal file ENZYMES_A costruisce una matrice diagonale a blocchi contenente le matrici di adiacenza di ogni grafo (un grafo per blocco)
+def build_adj_diag(nodes, graphs, idx, dataset_name):
+    if (os.path.exists(dataset_name + "_adj_matrix_aug.npz")):
+        adj_matrix = sp.load_npz(dataset_name + "_adj_matrix_aug.npz")
+        return adj_matrix
+
+    path = dataset_name + "/" + dataset_name.upper() + "_A.txt"
+
+    # vanno preparati 600 nodi globali, uno per grafo
+    nodes_tot = nodes + graphs
     fake_matrix = np.array([[0 for i in range(nodes)] for k in range(graphs)])
-    
-    #preparazione righe aggiuntive per i nodi globali
-    node_ind = np.genfromtxt(dataset_name+"/"+dataset_name.upper()+"_graph_indicator.txt")
+
+    # preparazione righe aggiuntive per i nodi globali
+    node_ind = np.genfromtxt(dataset_name + "/" + dataset_name.upper() + "_graph_indicator.txt")
     node_ind = node_ind.tolist()
     occ = [len(list(group)) for key, group in groupby(node_ind)]
-    occ = add_one_by_one(occ) # serve per riempire la parte aggiunta della matrice di adiacenza
+    occ = add_one_by_one(occ)  # serve per riempire la parte aggiunta della matrice di adiacenza
     occ.insert(0, 1)
     ranges = list(zip(occ[1:], occ))
     upper_idx, lower_idx = map(list, zip(*ranges))
 
     for index in range(graphs):
-        fake_matrix[index][(lower_idx[index] -1) : (upper_idx[index]-1)] = 1
+        fake_matrix[index][(lower_idx[index] - 1): (upper_idx[index] - 1)] = 1
 
-    #lettura matrice d'adiacenza originale
+    # lettura matrice d'adiacenza originale
     print("parsing original adj matrix")
     tmpdata = np.genfromtxt(path, dtype=np.dtype(str))
     ind1 = tmpdata[:, 1]
@@ -304,35 +349,34 @@ def build_adj_diag(nodes, graphs, idx, dataset_name):
     for i in range(len(ind1)):
         u = ind1[i]
         v = ind2[i]
-        u = int(u)      #vanno letti come stringhe
-        v = int(v[:-1]) #aggiustamenti per eliminare la virgola del file 
-        adj_matrix[u-1][v-1] = 1 
-    
-    #inserimento righe aggiuntive
+        u = int(u)  # vanno letti come stringhe
+        v = int(v[:-1])  # aggiustamenti per eliminare la virgola del file
+        adj_matrix[u - 1][v - 1] = 1
+
+        # inserimento righe aggiuntive
     print("inserting global node rows:")
     for i in range(graphs):
-        adj_matrix = np.insert(adj_matrix, idx[i]+i, fake_matrix[i], axis=0)
+        adj_matrix = np.insert(adj_matrix, idx[i] + i, fake_matrix[i], axis=0)
         print("row: ")
         print(i)
 
-    #preparazione colonne aggiuntive per i nodi globali
+    # preparazione colonne aggiuntive per i nodi globali
     lower_idx_new = [0 for i in range(graphs)]
-    upper_idx_new = [0 for i in range(graphs)]  
+    upper_idx_new = [0 for i in range(graphs)]
     for i in range(graphs):
-        lower_idx_new[i] = lower_idx[i]+i #riscalo l'indice perchè ho inserito 600 nuove righe
-        upper_idx_new[i] = upper_idx[i]+i #riscalo l'indice perchè ho inserito 600 nuove righe
+        lower_idx_new[i] = lower_idx[i] + i  # riscalo l'indice perchè ho inserito 600 nuove righe
+        upper_idx_new[i] = upper_idx[i] + i  # riscalo l'indice perchè ho inserito 600 nuove righe
 
     vert_padding = np.array([[0 for i in range(nodes_tot)] for k in range(graphs)])
     for i in range(graphs):
-        vert_padding[i][(lower_idx_new[i]-1):(upper_idx_new[i]-1)] = 1
+        vert_padding[i][(lower_idx_new[i] - 1):(upper_idx_new[i] - 1)] = 1
 
-    #inserimento colonne aggiuntive
+    # inserimento colonne aggiuntive
     print("inserting global node columns:")
     for i in range(graphs):
-        adj_matrix = np.insert(adj_matrix, idx[i]+i, vert_padding[i], axis=1)
+        adj_matrix = np.insert(adj_matrix, idx[i] + i, vert_padding[i], axis=1)
         print("column: ")
         print(i)
-
 
     adj_matrix = np.matrix(adj_matrix)
     adj_matrix = sp.coo_matrix(adj_matrix)

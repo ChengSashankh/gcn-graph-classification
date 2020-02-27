@@ -39,14 +39,12 @@ def normalize_adj(adj, symmetric=True):
         a_norm = d.dot(adj).tocsr()
     return sp.csr_matrix(a_norm)
 
-
 #conversione a tupla e normalizzazione della matrice d'adiacenza
 def preprocess_adj(adj, is_gcn, symmetric = True):
     if is_gcn:
         adj = adj + sp.eye(adj.shape[0]) # ogni nodo ha come vicino anche se stesso, fa parte di GCN
     adj = normalize_adj(adj, symmetric)
     return sparse_to_tuple(adj)
-
 
 #  --------------------- metriche --------------------------------------------
 #cross-entropy con mascheramento per isolare i nodi con label
