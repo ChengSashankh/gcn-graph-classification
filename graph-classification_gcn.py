@@ -9,6 +9,9 @@ from file_utils import *
 from utils import *
 from neural_networks import GCNGraphs
 from neural_networks import GCN
+
+import numpy as np
+
 # Set random seed
 seed = 123
 np.random.seed(seed)
@@ -39,7 +42,7 @@ dataset_name = "graphequations"
 
 if not FLAGS.with_pooling: #global nodes approach
 
-    adj, features, labels, idx = load_data (num_nodes, num_graphs, num_classes, num_feats, dataset_name) 
+    adj, features, labels, idx = load_data (num_nodes, num_graphs, num_classes, num_feats, dataset_name)
 
     y_train, y_val, y_test, idx_train, idx_val, idx_test, train_mask, val_mask, test_mask = get_splits_graphs(
         num_graphs, labels, splits[0], splits[1], splits[2], idx)

@@ -49,6 +49,12 @@ def preprocess_adj(adj, is_gcn, symmetric = True):
 #  --------------------- metriche --------------------------------------------
 #cross-entropy con mascheramento per isolare i nodi con label
 def masked_cross_entropy(predictions, labels, mask):
+    print (type(predictions))
+    print (type(labels))
+    print (type(mask))
+    print (predictions.shape)
+    print (labels.shape)
+    exit()
     loss = tf.nn.softmax_cross_entropy_with_logits_v2(logits=predictions, labels=labels)
     mask = tf.cast(mask, dtype=tf.float32)
     mask /= tf.reduce_mean(mask) #per normalizzare la loss finale
@@ -63,6 +69,8 @@ def masked_accuracy(predictions, labels, mask):
     mask /= tf.reduce_mean(mask)
     accuracy_all *= mask
     return tf.reduce_mean(accuracy_all)
+
+
 
 #  ----------------------- init -----------------------------------------------
 #inizializzatore di pesi secondo Glorot&Bengio

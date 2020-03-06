@@ -100,7 +100,8 @@ class GCN(BaseNet):
              
 
     def predict(self):
-        return tf.nn.softmax(self.outputs)
+        # return tf.nn.softmax(self.outputs)
+        return self.outputs
 
 
 class GCNGraphs(BaseNet):

@@ -167,8 +167,15 @@ def load_data(num_nodes, num_graphs, num_classes, dim_feats, dataset_name):
     adj_matrix = pickle.load(open('/Users/cksash/data/fyp/kdd/joined_adjmatrix.pkl', 'rb'))
     node_feats = pickle.load(open('/Users/cksash/data/fyp/kdd/node_vectors_joined.pkl', 'rb'))
     graph_labels = pickle.load(open('/Users/cksash/Documents/FYP-holidays/fyp-main/data/labels_words_first1000.pkl', 'rb'))
+    labels = np.array([[0 for i in range(num_classes)] for k in range(num_nodes)])
 
-    return adj_matrix, node_feats, graph_labels, global_nodes_idx
+    # inserisco le label vere su cui calcolare loss e verificare i risultati
+    for i in range(num_graphs):
+        labels = np.insert(labels, global_nodes_idx[i] + i, graph_labels[i], axis=0)
+        print("row: ")
+        print(i)
+
+    return adj_matrix, node_feats, labels, global_nodes_idx
 
 
 def find_insert_position():
